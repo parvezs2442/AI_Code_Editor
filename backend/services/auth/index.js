@@ -2,6 +2,7 @@
 import express from "express"
 import dotenv from "dotenv"
 import dbConnect from "./config/db.js";
+import router from "./routes/auth.routes.js";
 dotenv.config();
 
 
@@ -16,7 +17,7 @@ app.get("/", (req,res) => {
     })
 })
 
-
+app.use("/", router)
 
 try{
     await dbConnect();
