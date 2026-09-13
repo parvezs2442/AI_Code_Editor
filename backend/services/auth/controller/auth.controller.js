@@ -36,7 +36,7 @@ export const register = async (req, res) => {
       success: true,
       message: "User regstered ",
       user: {
-        id:user._id,
+        id: user._id,
         name: user.name,
         email: user.email,
       },
@@ -49,13 +49,11 @@ export const register = async (req, res) => {
   }
 };
 
-
-
 export const login = async (req, res) => {
   try {
     const { email, password } = req.body;
 
-    const user = await User.findOne({ email }).select("+password")
+    const user = await User.findOne({ email }).select("+password");
     if (!user) {
       return res.status(401).json({
         success: false,
@@ -63,9 +61,9 @@ export const login = async (req, res) => {
       });
     }
 
-    const isPasswordValid = await bcrypt.compare(password, user.password )
-    if(!isPasswordValid){
-        return res.status(401).json({
+    const isPasswordValid = await bcrypt.compare(password, user.password);
+    if (!isPasswordValid) {
+      return res.status(401).json({
         success: false,
         message: "Invalid email or Password",
       });
@@ -86,7 +84,7 @@ export const login = async (req, res) => {
       success: true,
       message: "User logged In ",
       user: {
-        id:user._id,
+        id: user._id,
         name: user.name,
         email: user.email,
       },
@@ -99,3 +97,49 @@ export const login = async (req, res) => {
   }
 };
 
+export const logout = async (req, res) => {
+  try {
+    res.clearCookie("token", {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === "production",
+      sameSite: "lax",
+    });
+
+    return res.status(200).json({
+      success: true,
+      message: "User logged Out ",
+    });
+  } catch (error) {
+    return res.status(500).json({
+      success: false,
+      message: "User LogOut Failed ",
+    });
+  }
+};
+
+export const getMe = async (req, res) => {
+  try {
+    const user = await User.findById(req.user.userid);
+
+    if (!user) {
+      return res.status(404).json({
+        success: false,
+        message: "User not found",
+      });
+    }
+
+    return res.status(200).json({
+      success: true,
+      user: {
+        id: user._id,
+        name: user.name,
+        email: user.email,
+      },
+    });
+  } catch (error) {
+    return res.status(500).json({
+      success: false,
+      message: "Failed to get current user ",
+    });
+  }
+};
