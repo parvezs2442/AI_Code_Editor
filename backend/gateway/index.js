@@ -20,11 +20,23 @@ app.use(cors({
 
 const PORT = process.env.PORT || 3000
 
-app.use("/api/auth" , proxy(process.env.AUTH_URL, {
-    parseReqBody: false
+app.use("/api/auth", proxy(process.env.AUTH_URL, {
+    parseReqBody: false,
+    proxyErrorHandler: function (err, res, next) {
+        return res.status(503).json({
+            success: false,
+            message: "Auth service is unavailable. Please ensure backend/services/auth is running on port 3001."
+        });
+    }
 }))
-app.use("/api/project" , proxy(process.env.PROJECT_URL, {
-    parseReqBody: false
+app.use("/api/project", proxy(process.env.PROJECT_URL, {
+    parseReqBody: false,
+    proxyErrorHandler: function (err, res, next) {
+        return res.status(503).json({
+            success: false,
+            message: "Project service is unavailable. Please ensure backend/services/project is running on port 3002."
+        });
+    }
 }))
 
 app.get("/", (req,res) => {
