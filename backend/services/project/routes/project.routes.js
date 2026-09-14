@@ -5,6 +5,7 @@ import {
   getProjectById,
   updateProject,
   deleteProject,
+  toggleStarProject,
 } from "../controller/project.controller.js";
 import { authMiddleware } from "../middleware/auth.middleware.js";
 
@@ -16,6 +17,8 @@ router.use(authMiddleware);
 router.post("/create", createProject);
 router.get("/all", getProjects);
 router.get("/:id", getProjectById);
+router.patch("/:id/star", toggleStarProject);
+router.put("/:id/star", toggleStarProject);
 router.put("/:id", updateProject);
 router.delete("/:id", deleteProject);
 

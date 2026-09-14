@@ -7,6 +7,9 @@ const Dashboard = () => {
   const { user, logoutUser } = useAuth();
   const navigate = useNavigate();
 
+  // Active Tab: 'projects' | 'starred'
+  const [activeTab, setActiveTab] = useState("projects");
+
   // Projects state
   const [projects, setProjects] = useState([]);
   const [loadingProjects, setLoadingProjects] = useState(true);
@@ -20,8 +23,12 @@ const Dashboard = () => {
   const [isCreating, setIsCreating] = useState(false);
   const [modalError, setModalError] = useState("");
 
-  // Deleting State
+  // Deleting & Star Toggling State
   const [deletingId, setDeletingId] = useState(null);
+  const [starringId, setStarringId] = useState(null);
+
+  // User Dropdown State
+  const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
 
   const fetchProjects = async () => {
     try {
@@ -85,9 +92,34 @@ const Dashboard = () => {
     }
   };
 
-  const handleDeleteProject = async (projectId, projectName) => {
+  const handleToggleStar = async (e, projectId) => {
+    e.stopPropagation();
+    try {
+      setStarringId(projectId);
+      const response = await axios.patch(
+        `http://localhost:3000/api/project/${projectId}/star`,
+        {},
+        { withCredentials: true }
+      );
+
+      if (response.data && response.data.project) {
+        setProjects((prev) =>
+          prev.map((p) =>
+            p._id === projectId ? { ...p, isStarred: response.data.project.isStarred } : p
+          )
+        );
+      }
+    } catch (error) {
+      console.error("Star toggle error:", error);
+    } finally {
+      setStarringId(null);
+    }
+  };
+
+  const handleDeleteProject = async (e, projectId, name) => {
+    e.stopPropagation();
     const confirmDelete = window.confirm(
-      `Are you sure you want to delete "${projectName}"? This action cannot be undone.`
+      `Are you sure you want to delete "${name}"? This action cannot be undone.`
     );
     if (!confirmDelete) return;
 
@@ -163,19 +195,22 @@ const Dashboard = () => {
     }
   };
 
-  const filteredProjects = projects.filter((p) =>
-    p.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    (p.description && p.description.toLowerCase().includes(searchQuery.toLowerCase()))
+  const starredProjects = projects.filter((p) => p.isStarred);
+
+  const displayedProjects = (activeTab === "starred" ? starredProjects : projects).filter(
+    (p) =>
+      p.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      (p.description && p.description.toLowerCase().includes(searchQuery.toLowerCase()))
   );
 
   return (
-    <div className="min-h-screen bg-[#0a0d14] text-gray-200 flex flex-col font-sans relative">
-      {/* Top Navigation Bar */}
-      <header className="border-b border-gray-800/80 bg-[#121620]/80 backdrop-blur-md sticky top-0 z-40">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
-          {/* Logo & Brand */}
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl bg-gradient-to-tr from-indigo-500 to-cyan-500 flex items-center justify-center shadow-md shadow-indigo-500/20">
+    <div className="min-h-screen bg-[#0d0f14] text-gray-200 flex flex-row font-sans selection:bg-indigo-500/30">
+      {/* LEFT SIDEBAR */}
+      <aside className="w-64 border-r border-gray-800/80 bg-[#12141c] flex flex-col justify-between shrink-0 min-h-screen sticky top-0 h-screen">
+        <div>
+          {/* Brand Logo & Name */}
+          <div className="h-16 px-6 flex items-center gap-3 border-b border-gray-800/60">
+            <div className="w-9 h-9 rounded-xl bg-gradient-to-tr from-indigo-500 to-cyan-500 flex items-center justify-center shadow-lg shadow-indigo-500/20">
               <svg
                 className="w-5 h-5 text-white"
                 fill="none"
@@ -190,121 +225,165 @@ const Dashboard = () => {
                 />
               </svg>
             </div>
-            <div>
-              <span className="font-bold text-lg text-white tracking-tight">CodeCloud</span>
-              <span className="hidden sm:inline-block ml-2 text-xs font-mono bg-indigo-500/10 text-indigo-400 border border-indigo-500/20 px-2 py-0.5 rounded-md">
-                Workspace
+            <span className="font-extrabold text-lg text-white tracking-tight">
+              CodeCloud
+            </span>
+          </div>
+
+          {/* Navigation Links */}
+          <nav className="p-4 space-y-1.5">
+            {/* Projects Tab */}
+            <button
+              onClick={() => setActiveTab("projects")}
+              className={`w-full flex items-center justify-between px-3.5 py-2.5 rounded-xl text-sm font-medium transition-all duration-150 cursor-pointer ${
+                activeTab === "projects"
+                  ? "bg-[#1c202d] text-white shadow-sm border border-gray-700/60"
+                  : "text-gray-400 hover:text-gray-200 hover:bg-[#181b26]"
+              }`}
+            >
+              <div className="flex items-center gap-3">
+                <svg
+                  className={`w-4 h-4 ${
+                    activeTab === "projects" ? "text-indigo-400" : "text-gray-400"
+                  }`}
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth="1.8"
+                    d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z"
+                  />
+                </svg>
+                <span>Projects</span>
+              </div>
+              <span className="text-xs font-mono px-2 py-0.5 rounded-md bg-gray-800/80 text-gray-400">
+                {projects.length}
               </span>
+            </button>
+
+            {/* Starred Tab */}
+            <button
+              onClick={() => setActiveTab("starred")}
+              className={`w-full flex items-center justify-between px-3.5 py-2.5 rounded-xl text-sm font-medium transition-all duration-150 cursor-pointer ${
+                activeTab === "starred"
+                  ? "bg-[#1c202d] text-white shadow-sm border border-gray-700/60"
+                  : "text-gray-400 hover:text-gray-200 hover:bg-[#181b26]"
+              }`}
+            >
+              <div className="flex items-center gap-3">
+                <svg
+                  className={`w-4 h-4 ${
+                    activeTab === "starred"
+                      ? "text-amber-400 fill-amber-400"
+                      : "text-gray-400"
+                  }`}
+                  fill={activeTab === "starred" ? "currentColor" : "none"}
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth="1.8"
+                    d="M11.049 2.927c.3-.921 1.603-.921 1.902 0l1.519 4.674a1 1 0 00.95.69h4.915c.969 0 1.371 1.24.588 1.81l-3.976 2.888a1 1 0 00-.363 1.118l1.518 4.674c.3.922-.755 1.688-1.538 1.118l-3.976-2.888a1 1 0 00-1.176 0l-3.976 2.888c-.783.57-1.838-.197-1.538-1.118l1.518-4.674a1 1 0 00-.363-1.118l-3.976-2.888c-.784-.57-.38-1.81.588-1.81h4.914a1 1 0 00.951-.69l1.519-4.674z"
+                  />
+                </svg>
+                <span>Starred</span>
+              </div>
+              <span className="text-xs font-mono px-2 py-0.5 rounded-md bg-gray-800/80 text-amber-400/80">
+                {starredProjects.length}
+              </span>
+            </button>
+          </nav>
+        </div>
+
+        {/* Upgrade Plan Card (matching reference UI) */}
+        <div className="p-4 m-3 rounded-2xl bg-[#171a24] border border-gray-800/80 shadow-lg relative overflow-hidden">
+          <div className="absolute top-0 right-0 w-24 h-24 bg-indigo-500/10 rounded-full blur-xl pointer-events-none" />
+          <h4 className="text-xs font-bold text-gray-100 uppercase tracking-wider mb-1">
+            Upgrade Plan
+          </h4>
+          <p className="text-[11px] text-gray-400 leading-relaxed mb-3">
+            Upgrade to Pro for unlimited cloud containers & real-time team collaboration.
+          </p>
+          <button
+            onClick={() => alert("Pro membership features coming soon!")}
+            className="w-full flex items-center justify-center gap-2 py-2 px-3 bg-white text-gray-900 hover:bg-gray-100 rounded-xl text-xs font-semibold shadow-md transition-all cursor-pointer"
+          >
+            <svg className="w-3.5 h-3.5 fill-current" viewBox="0 0 24 24">
+              <path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z" />
+            </svg>
+            <span>Upgrade Now</span>
+          </button>
+        </div>
+      </aside>
+
+      {/* MAIN CONTENT AREA */}
+      <div className="flex-1 flex flex-col min-w-0">
+        {/* Top Navbar */}
+        <header className="h-16 border-b border-gray-800/60 bg-[#12141c]/60 backdrop-blur-md px-8 flex items-center justify-between sticky top-0 z-30">
+          {/* Search or Quick Status */}
+          <div className="flex items-center gap-3 w-full max-w-md">
+            <div className="relative w-full">
+              <svg
+                className="w-4 h-4 text-gray-500 absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth="2"
+                  d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
+                />
+              </svg>
+              <input
+                type="text"
+                placeholder="Search projects..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="w-full pl-10 pr-4 py-2 bg-[#0a0d14] border border-gray-800 rounded-xl text-xs text-gray-200 placeholder-gray-500 focus:outline-none focus:border-indigo-500/80 transition-colors"
+              />
             </div>
           </div>
 
-          {/* Right User Bar & Logout */}
+          {/* Right Header items: Theme icon & User menu */}
           <div className="flex items-center gap-4">
-            <div className="flex items-center gap-3 bg-[#0a0d14]/70 border border-gray-800 px-3 py-1.5 rounded-xl">
-              <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center text-xs font-bold text-white shadow-inner">
-                {getInitials(user?.name)}
-              </div>
-              <div className="hidden sm:block text-left text-xs">
-                <p className="font-medium text-gray-200 leading-tight">{user?.name || "Developer"}</p>
-                <p className="text-gray-500 text-[11px] truncate max-w-[150px]">{user?.email}</p>
-              </div>
-            </div>
-
-            <button
-              onClick={handleLogout}
-              className="inline-flex items-center gap-2 px-3.5 py-1.5 text-xs font-medium text-rose-400 hover:text-rose-300 bg-rose-500/10 hover:bg-rose-500/20 border border-rose-500/20 rounded-xl transition-all duration-150 cursor-pointer"
-              title="Logout session"
+            {/* Dark Mode Moon Indicator */}
+            <div
+              className="w-9 h-9 rounded-xl bg-[#171a24] border border-gray-800/80 flex items-center justify-center text-gray-400"
+              title="Dark theme active"
             >
               <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path
                   strokeLinecap="round"
                   strokeLinejoin="round"
                   strokeWidth="2"
-                  d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"
+                  d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z"
                 />
               </svg>
-              <span>Logout</span>
-            </button>
-          </div>
-        </div>
-      </header>
+            </div>
 
-      {/* Main Workspace Area */}
-      <main className="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        {/* Welcome Banner */}
-        <div className="relative overflow-hidden bg-gradient-to-r from-indigo-950/40 via-purple-950/20 to-[#121620] border border-indigo-500/20 rounded-2xl p-6 sm:p-8 mb-8 shadow-xl">
-          <div className="relative z-10 max-w-2xl">
-            <span className="text-xs uppercase tracking-widest text-indigo-400 font-mono font-semibold">
-              Authenticated Workspace
-            </span>
-            <h1 className="text-2xl sm:text-3xl font-bold text-white mt-1 mb-2">
-              Welcome back, {user?.name || "Developer"}! 👋
-            </h1>
-            <p className="text-sm text-gray-400 leading-relaxed">
-              Manage your cloud repositories, create multi-language projects, and launch browser development environments.
-            </p>
-
-            <div className="mt-5 flex flex-wrap gap-3">
+            {/* User Profile Pill & Dropdown */}
+            <div className="relative">
               <button
-                onClick={() => setIsModalOpen(true)}
-                className="inline-flex items-center gap-2 bg-gradient-to-r from-indigo-500 to-indigo-600 hover:from-indigo-600 hover:to-indigo-700 text-white text-xs font-semibold px-4 py-2.5 rounded-xl shadow-lg shadow-indigo-500/25 transition-all transform active:scale-95 cursor-pointer"
+                onClick={() => setIsUserMenuOpen(!isUserMenuOpen)}
+                className="flex items-center gap-2.5 py-1 px-2.5 rounded-xl hover:bg-[#1c202d] transition-colors border border-transparent hover:border-gray-800 cursor-pointer"
               >
-                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 4v16m8-8H4" />
-                </svg>
-                + Create New Project
-              </button>
-            </div>
-          </div>
-        </div>
-
-        {/* Quick Stats Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-5 mb-8">
-          <div className="bg-[#121620]/70 border border-gray-800/80 rounded-xl p-5 hover:border-gray-700 transition-all">
-            <div className="flex items-center justify-between mb-3">
-              <span className="text-xs font-mono text-gray-400">TOTAL PROJECTS</span>
-              <span className="w-2.5 h-2.5 rounded-full bg-indigo-500"></span>
-            </div>
-            <p className="text-2xl font-bold text-white">{projects.length}</p>
-            <p className="text-xs text-gray-500 mt-1">Active user workspaces in database</p>
-          </div>
-
-          <div className="bg-[#121620]/70 border border-gray-800/80 rounded-xl p-5 hover:border-gray-700 transition-all">
-            <div className="flex items-center justify-between mb-3">
-              <span className="text-xs font-mono text-gray-400">AUTH STATUS</span>
-              <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse"></span>
-            </div>
-            <p className="text-xl font-bold text-white">Active Session</p>
-            <p className="text-xs text-gray-500 mt-1">JWT verified via HTTP-Only cookie</p>
-          </div>
-
-          <div className="bg-[#121620]/70 border border-gray-800/80 rounded-xl p-5 hover:border-gray-700 transition-all">
-            <div className="flex items-center justify-between mb-3">
-              <span className="text-xs font-mono text-gray-400">PROJECT SERVICE</span>
-              <span className="text-xs font-mono text-cyan-400 bg-cyan-500/10 px-2 py-0.5 rounded">
-                Port :3002
-              </span>
-            </div>
-            <p className="text-xl font-bold text-white">CRUD Service Online</p>
-            <p className="text-xs text-gray-500 mt-1">Connected to MongoDB Project Cluster</p>
-          </div>
-        </div>
-
-        {/* Projects Section Header & Search */}
-        <div className="bg-[#121620]/90 border border-gray-800/80 rounded-2xl p-6 shadow-xl">
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
-            <div>
-              <h2 className="text-lg font-bold text-white">Your Projects</h2>
-              <p className="text-xs text-gray-400 mt-0.5">
-                Browse and manage all code repositories created by your account
-              </p>
-            </div>
-
-            <div className="flex items-center gap-3">
-              {/* Search Bar */}
-              <div className="relative">
+                <div className="w-8 h-8 rounded-full bg-gradient-to-tr from-indigo-500 to-cyan-500 flex items-center justify-center text-xs font-bold text-white shadow-md">
+                  {getInitials(user?.name)}
+                </div>
+                <span className="text-sm font-medium text-gray-200 hidden sm:inline-block">
+                  {user?.name || "Developer"}
+                </span>
                 <svg
-                  className="w-4 h-4 text-gray-500 absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none"
+                  className={`w-3.5 h-3.5 text-gray-400 transition-transform duration-150 ${
+                    isUserMenuOpen ? "rotate-180" : ""
+                  }`}
                   fill="none"
                   stroke="currentColor"
                   viewBox="0 0 24 24"
@@ -313,147 +392,231 @@ const Dashboard = () => {
                     strokeLinecap="round"
                     strokeLinejoin="round"
                     strokeWidth="2"
-                    d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
-                  />
-                </svg>
-                <input
-                  type="text"
-                  placeholder="Search projects..."
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                  className="pl-9 pr-3 py-1.5 bg-[#0a0d14] border border-gray-800 rounded-xl text-xs text-gray-200 placeholder-gray-500 focus:outline-none focus:border-indigo-500"
-                />
-              </div>
-
-              {/* Refresh Button */}
-              <button
-                onClick={fetchProjects}
-                className="p-2 bg-[#0a0d14] hover:bg-gray-800 border border-gray-800 text-gray-400 hover:text-white rounded-xl transition-colors cursor-pointer"
-                title="Refresh projects list"
-              >
-                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth="2"
-                    d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"
+                    d="M19 9l-7 7-7-7"
                   />
                 </svg>
               </button>
 
-              {/* Create New Project CTA */}
-              <button
-                onClick={() => setIsModalOpen(true)}
-                className="inline-flex items-center gap-1.5 bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-semibold px-3 py-2 rounded-xl shadow-md transition-all cursor-pointer"
-              >
-                <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 4v16m8-8H4" />
-                </svg>
-                <span>New Project</span>
-              </button>
+              {/* Dropdown Menu */}
+              {isUserMenuOpen && (
+                <div className="absolute right-0 mt-2 w-52 bg-[#171a24] border border-gray-800 rounded-2xl shadow-2xl py-2 z-50 animate-fadeIn">
+                  <div className="px-4 py-2 border-b border-gray-800/80">
+                    <p className="text-xs font-semibold text-white truncate">
+                      {user?.name || "Developer"}
+                    </p>
+                    <p className="text-[11px] text-gray-400 font-mono truncate">
+                      {user?.email}
+                    </p>
+                  </div>
+
+                  <button
+                    onClick={() => {
+                      setIsUserMenuOpen(false);
+                      navigate("/profile");
+                    }}
+                    className="w-full text-left px-4 py-2 text-xs text-gray-300 hover:text-white hover:bg-gray-800/50 flex items-center gap-2 transition-colors cursor-pointer"
+                  >
+                    <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth="2"
+                        d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"
+                      />
+                    </svg>
+                    Profile Settings
+                  </button>
+
+                  <button
+                    onClick={handleLogout}
+                    className="w-full text-left px-4 py-2 text-xs text-rose-400 hover:bg-rose-500/10 flex items-center gap-2 transition-colors cursor-pointer"
+                  >
+                    <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth="2"
+                        d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"
+                      />
+                    </svg>
+                    Sign Out
+                  </button>
+                </div>
+              )}
             </div>
           </div>
+        </header>
 
-          {/* Projects Listing */}
-          {loadingProjects ? (
-            <div className="py-16 flex flex-col items-center justify-center gap-3">
-              <div className="w-8 h-8 border-3 border-indigo-500/20 border-t-indigo-500 rounded-full animate-spin"></div>
-              <p className="text-xs font-mono text-gray-400">Loading your projects...</p>
-            </div>
-          ) : filteredProjects.length === 0 ? (
-            <div className="border border-dashed border-gray-800 rounded-xl p-12 flex flex-col items-center justify-center text-center">
-              <div className="w-12 h-12 rounded-xl bg-gray-800/60 flex items-center justify-center text-gray-500 mb-3">
-                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth="1.5"
-                    d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"
-                  />
-                </svg>
-              </div>
-              <h3 className="text-sm font-semibold text-gray-300 mb-1">
-                {searchQuery ? "No matching projects" : "No Projects Found"}
-              </h3>
-              <p className="text-xs text-gray-500 max-w-sm mb-5">
-                {searchQuery
-                  ? "Try searching for a different project name or clear your filter."
-                  : "You haven't created any projects yet. Start building something awesome!"}
+        {/* Main Content Area */}
+        <main className="p-8 max-w-7xl w-full">
+          {/* Welcome Header + "+ New Project" Button (matching screenshot layout) */}
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-8">
+            <div>
+              <h1 className="text-2xl sm:text-3xl font-extrabold text-white tracking-tight flex items-center gap-2.5">
+                Welcome Back, {user?.name || "Developer"} 👋
+              </h1>
+              <p className="text-sm text-gray-400 mt-1">
+                Ready to build something amazing today?
               </p>
-              <button
-                onClick={() => setIsModalOpen(true)}
-                className="px-4 py-2 text-xs font-semibold text-white bg-indigo-600 hover:bg-indigo-500 rounded-xl shadow-lg shadow-indigo-600/20 transition-all cursor-pointer flex items-center gap-2"
-              >
-                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 4v16m8-8H4" />
-                </svg>
-                Create Your First Project
-              </button>
+            </div>
+
+            <button
+              onClick={() => setIsModalOpen(true)}
+              className="inline-flex items-center gap-2 bg-white text-gray-900 hover:bg-gray-100 font-semibold text-sm px-5 py-2.5 rounded-xl shadow-lg transition-all transform active:scale-95 cursor-pointer self-start sm:self-auto"
+            >
+              <svg className="w-4 h-4 font-bold" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M12 4v16m8-8H4" />
+              </svg>
+              <span>New Project</span>
+            </button>
+          </div>
+
+          {/* Section Heading: "Recent Projects" or "Starred Projects" */}
+          <div className="flex items-center justify-between mb-5">
+            <h2 className="text-base font-bold text-white tracking-wide">
+              {activeTab === "starred" ? "Starred Projects" : "Recent Projects"}
+            </h2>
+
+            <span className="text-xs text-gray-500 font-mono">
+              {displayedProjects.length} project{displayedProjects.length !== 1 ? "s" : ""}
+            </span>
+          </div>
+
+          {/* Projects Grid */}
+          {loadingProjects ? (
+            <div className="py-20 flex flex-col items-center justify-center gap-3">
+              <div className="w-8 h-8 border-3 border-indigo-500/20 border-t-indigo-500 rounded-full animate-spin"></div>
+              <p className="text-xs font-mono text-gray-400">Loading your workspaces...</p>
+            </div>
+          ) : displayedProjects.length === 0 ? (
+            <div className="border border-dashed border-gray-800 rounded-2xl p-14 flex flex-col items-center justify-center text-center bg-[#12141c]/40">
+              <div className="w-12 h-12 rounded-2xl bg-gray-800/50 flex items-center justify-center text-gray-400 mb-3">
+                {activeTab === "starred" ? (
+                  <svg className="w-6 h-6 text-amber-400/60" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth="1.5"
+                      d="M11.049 2.927c.3-.921 1.603-.921 1.902 0l1.519 4.674a1 1 0 00.95.69h4.915c.969 0 1.371 1.24.588 1.81l-3.976 2.888a1 1 0 00-.363 1.118l1.518 4.674c.3.922-.755 1.688-1.538 1.118l-3.976-2.888a1 1 0 00-1.176 0l-3.976 2.888c-.783.57-1.838-.197-1.538-1.118l1.518-4.674a1 1 0 00-.363-1.118l-3.976-2.888c-.784-.57-.38-1.81.588-1.81h4.914a1 1 0 00.951-.69l1.519-4.674z"
+                    />
+                  </svg>
+                ) : (
+                  <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth="1.5"
+                      d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z"
+                    />
+                  </svg>
+                )}
+              </div>
+              <h3 className="text-sm font-semibold text-gray-200 mb-1">
+                {activeTab === "starred"
+                  ? "No Starred Projects"
+                  : searchQuery
+                  ? "No matching projects found"
+                  : "No Projects Created Yet"}
+              </h3>
+              <p className="text-xs text-gray-400 max-w-sm mb-5">
+                {activeTab === "starred"
+                  ? "Click the star icon on any project card to bookmark it for quick access."
+                  : searchQuery
+                  ? "Try searching with a different term."
+                  : "Get started by initializing your first cloud repository."}
+              </p>
+              {activeTab === "projects" && (
+                <button
+                  onClick={() => setIsModalOpen(true)}
+                  className="px-4 py-2 text-xs font-semibold text-white bg-indigo-600 hover:bg-indigo-500 rounded-xl shadow-md transition-all cursor-pointer flex items-center gap-2"
+                >
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 4v16m8-8H4" />
+                  </svg>
+                  Create Project
+                </button>
+              )}
             </div>
           ) : (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
-              {filteredProjects.map((project) => {
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5">
+              {displayedProjects.map((project) => {
                 const langBadge = getLanguageColor(project.language);
                 const isDeleting = deletingId === project._id;
+                const isStarring = starringId === project._id;
 
                 return (
                   <div
                     key={project._id}
-                    className="bg-[#0a0d14]/70 border border-gray-800 hover:border-indigo-500/40 rounded-xl p-5 flex flex-col justify-between transition-all duration-200 group hover:shadow-xl hover:shadow-indigo-500/5"
+                    onClick={() => alert(`Opening Code Editor for project: "${project.name}" (ID: ${project._id})`)}
+                    className="h-44 p-5 rounded-2xl bg-[#141721]/90 border border-gray-800/90 hover:border-gray-700 hover:bg-[#181c28] transition-all duration-200 flex flex-col justify-between cursor-pointer group shadow-lg relative overflow-hidden"
                   >
+                    {/* Top Row: Title & Star Button (matching reference screenshot) */}
                     <div>
-                      {/* Card Header: Language badge & Delete action */}
-                      <div className="flex items-center justify-between gap-2 mb-3">
-                        <span
-                          className={`text-[11px] font-mono font-medium px-2.5 py-0.5 rounded-md border ${langBadge.bg} ${langBadge.text} ${langBadge.border}`}
-                        >
-                          {langBadge.label}
-                        </span>
+                      <div className="flex items-start justify-between gap-3 mb-1.5">
+                        <h3 className="text-base font-bold text-white group-hover:text-indigo-300 transition-colors line-clamp-1">
+                          {project.name}
+                        </h3>
 
+                        {/* Star / Unstar Button */}
                         <button
-                          onClick={() => handleDeleteProject(project._id, project.name)}
-                          disabled={isDeleting}
-                          className="p-1.5 text-gray-500 hover:text-rose-400 hover:bg-rose-500/10 rounded-lg transition-colors cursor-pointer disabled:opacity-50"
-                          title="Delete Project"
+                          onClick={(e) => handleToggleStar(e, project._id)}
+                          disabled={isStarring}
+                          className="p-1 rounded-lg hover:bg-gray-800/80 transition-colors cursor-pointer text-gray-500 hover:text-amber-400 shrink-0"
+                          title={project.isStarred ? "Remove star" : "Star project"}
                         >
-                          {isDeleting ? (
-                            <div className="w-3.5 h-3.5 border-2 border-rose-400/30 border-t-rose-400 rounded-full animate-spin"></div>
-                          ) : (
-                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                              <path
-                                strokeLinecap="round"
-                                strokeLinejoin="round"
-                                strokeWidth="1.8"
-                                d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"
-                              />
-                            </svg>
-                          )}
+                          <svg
+                            className={`w-4 h-4 transition-transform duration-150 active:scale-125 ${
+                              project.isStarred
+                                ? "text-amber-400 fill-amber-400"
+                                : "text-gray-500 hover:text-gray-300"
+                            }`}
+                            fill={project.isStarred ? "currentColor" : "none"}
+                            stroke="currentColor"
+                            viewBox="0 0 24 24"
+                          >
+                            <path
+                              strokeLinecap="round"
+                              strokeLinejoin="round"
+                              strokeWidth="1.8"
+                              d="M11.049 2.927c.3-.921 1.603-.921 1.902 0l1.519 4.674a1 1 0 00.95.69h4.915c.969 0 1.371 1.24.588 1.81l-3.976 2.888a1 1 0 00-.363 1.118l1.518 4.674c.3.922-.755 1.688-1.538 1.118l-3.976-2.888a1 1 0 00-1.176 0l-3.976 2.888c-.783.57-1.838-.197-1.538-1.118l1.518-4.674a1 1 0 00-.363-1.118l-3.976-2.888c-.784-.57-.38-1.81.588-1.81h4.914a1 1 0 00.951-.69l1.519-4.674z"
+                            />
+                          </svg>
                         </button>
                       </div>
 
-                      {/* Project Title & Description */}
-                      <h3 className="text-base font-bold text-white group-hover:text-indigo-300 transition-colors line-clamp-1 mb-1.5">
-                        {project.name}
-                      </h3>
-                      <p className="text-xs text-gray-400 line-clamp-2 min-h-[32px] leading-relaxed">
+                      {/* Description */}
+                      <p className="text-xs text-gray-400 line-clamp-2 leading-relaxed">
                         {project.description || "No description provided."}
                       </p>
                     </div>
 
-                    {/* Card Footer: Metadata & Open Button */}
-                    <div className="mt-5 pt-4 border-t border-gray-800/80 flex items-center justify-between">
-                      <span className="text-[11px] text-gray-500 font-mono">
-                        {project.files?.length || 1} file{(project.files?.length || 1) > 1 ? "s" : ""}
+                    {/* Bottom Row: Language Pill & Delete Trash Icon (matching reference screenshot) */}
+                    <div className="flex items-center justify-between pt-3 border-t border-gray-800/60">
+                      <span
+                        className={`text-[10px] font-mono px-2 py-0.5 rounded-md border ${langBadge.bg} ${langBadge.text} ${langBadge.border}`}
+                      >
+                        {langBadge.label}
                       </span>
 
+                      {/* Delete Icon (bottom right trash can) */}
                       <button
-                        onClick={() => alert(`Opening Code Editor for project: "${project.name}" (ID: ${project._id})`)}
-                        className="inline-flex items-center gap-1.5 text-xs font-semibold text-indigo-400 hover:text-indigo-300 transition-colors cursor-pointer"
+                        onClick={(e) => handleDeleteProject(e, project._id, project.name)}
+                        disabled={isDeleting}
+                        className="p-1.5 text-gray-500 hover:text-rose-400 hover:bg-rose-500/10 rounded-lg transition-colors cursor-pointer"
+                        title="Delete project"
                       >
-                        <span>Open Editor</span>
-                        <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M14 5l7 7m0 0l-7 7m7-7H3" />
-                        </svg>
+                        {isDeleting ? (
+                          <div className="w-3.5 h-3.5 border-2 border-rose-400/30 border-t-rose-400 rounded-full animate-spin"></div>
+                        ) : (
+                          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path
+                              strokeLinecap="round"
+                              strokeLinejoin="round"
+                              strokeWidth="1.6"
+                              d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"
+                            />
+                          </svg>
+                        )}
                       </button>
                     </div>
                   </div>
@@ -461,13 +624,13 @@ const Dashboard = () => {
               })}
             </div>
           )}
-        </div>
-      </main>
+        </main>
+      </div>
 
       {/* CREATE PROJECT MODAL */}
       {isModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm animate-fadeIn">
-          <div className="w-full max-w-md bg-[#121620] border border-gray-800 rounded-2xl p-6 shadow-2xl relative">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/75 backdrop-blur-sm animate-fadeIn">
+          <div className="w-full max-w-md bg-[#161922] border border-gray-800 rounded-2xl p-6 shadow-2xl relative">
             {/* Close Button */}
             <button
               onClick={() => setIsModalOpen(false)}
@@ -514,10 +677,10 @@ const Dashboard = () => {
                 <input
                   type="text"
                   required
-                  placeholder="e.g. My React App"
+                  placeholder="e.g. Calculator"
                   value={projectName}
                   onChange={(e) => setProjectName(e.target.value)}
-                  className="w-full px-3.5 py-2.5 bg-[#0a0d14] border border-gray-800 rounded-xl text-sm text-gray-100 placeholder-gray-500 focus:outline-none focus:border-indigo-500"
+                  className="w-full px-3.5 py-2.5 bg-[#0e1017] border border-gray-800 rounded-xl text-sm text-gray-100 placeholder-gray-500 focus:outline-none focus:border-indigo-500"
                 />
               </div>
 
@@ -527,10 +690,10 @@ const Dashboard = () => {
                 </label>
                 <textarea
                   rows="2"
-                  placeholder="Brief summary of your project..."
+                  placeholder="e.g. for simple calculation"
                   value={projectDesc}
                   onChange={(e) => setProjectDesc(e.target.value)}
-                  className="w-full px-3.5 py-2.5 bg-[#0a0d14] border border-gray-800 rounded-xl text-sm text-gray-100 placeholder-gray-500 focus:outline-none focus:border-indigo-500 resize-none"
+                  className="w-full px-3.5 py-2.5 bg-[#0e1017] border border-gray-800 rounded-xl text-sm text-gray-100 placeholder-gray-500 focus:outline-none focus:border-indigo-500 resize-none"
                 />
               </div>
 
@@ -541,7 +704,7 @@ const Dashboard = () => {
                 <select
                   value={projectLang}
                   onChange={(e) => setProjectLang(e.target.value)}
-                  className="w-full px-3.5 py-2.5 bg-[#0a0d14] border border-gray-800 rounded-xl text-sm text-gray-100 focus:outline-none focus:border-indigo-500 cursor-pointer"
+                  className="w-full px-3.5 py-2.5 bg-[#0e1017] border border-gray-800 rounded-xl text-sm text-gray-100 focus:outline-none focus:border-indigo-500 cursor-pointer"
                 >
                   <option value="javascript">JavaScript (Node.js / Web)</option>
                   <option value="python">Python 3</option>
@@ -563,11 +726,11 @@ const Dashboard = () => {
                 <button
                   type="submit"
                   disabled={isCreating}
-                  className="px-5 py-2.5 bg-indigo-600 hover:bg-indigo-500 disabled:opacity-50 text-white text-xs font-semibold rounded-xl shadow-lg shadow-indigo-600/20 transition-all cursor-pointer flex items-center gap-2"
+                  className="px-5 py-2.5 bg-white text-gray-900 hover:bg-gray-100 disabled:opacity-50 text-xs font-semibold rounded-xl shadow-lg transition-all cursor-pointer flex items-center gap-2"
                 >
                   {isCreating ? (
                     <>
-                      <div className="w-3.5 h-3.5 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
+                      <div className="w-3.5 h-3.5 border-2 border-gray-900/30 border-t-gray-900 rounded-full animate-spin"></div>
                       <span>Creating...</span>
                     </>
                   ) : (

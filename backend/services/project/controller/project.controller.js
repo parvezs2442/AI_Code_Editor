@@ -82,7 +82,12 @@ export const createProject = async (req, res) => {
 
 export const getProjects = async (req, res) => {
   try {
-    const projects = await Project.find({ user: req.user.userId }).sort({
+    const filter = { user: req.user.userId };
+    if (req.query.starred === "true") {
+      filter.isStarred = true;
+    }
+
+    const projects = await Project.find(filter).sort({
       updatedAt: -1,
     });
 
@@ -129,16 +134,51 @@ export const getProjectById = async (req, res) => {
   }
 };
 
+export const toggleStarProject = async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    const project = await Project.findOne({
+      _id: id,
+      user: req.user.userId,
+    });
+
+    if (!project) {
+      return res.status(404).json({
+        success: false,
+        message: "Project not found or unauthorized",
+      });
+    }
+
+    project.isStarred = !project.isStarred;
+    await project.save();
+
+    return res.status(200).json({
+      success: true,
+      message: project.isStarred ? "Project starred" : "Project unstarred",
+      isStarred: project.isStarred,
+      project,
+    });
+  } catch (error) {
+    console.error("Toggle Star Error:", error);
+    return res.status(500).json({
+      success: false,
+      message: "Failed to toggle star status",
+    });
+  }
+};
+
 export const updateProject = async (req, res) => {
   try {
     const { id } = req.params;
-    const { name, description, language, files } = req.body;
+    const { name, description, language, files, isStarred } = req.body;
 
     const updateData = {};
     if (name !== undefined) updateData.name = name.trim();
     if (description !== undefined) updateData.description = description.trim();
     if (language !== undefined) updateData.language = language;
     if (files !== undefined) updateData.files = files;
+    if (isStarred !== undefined) updateData.isStarred = isStarred;
 
     const project = await Project.findOneAndUpdate(
       { _id: id, user: req.user.userId },

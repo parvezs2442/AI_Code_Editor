@@ -37,6 +37,10 @@ const projectSchema = new mongoose.Schema(
       required: [true, "User ID is required"],
       index: true,
     },
+    isStarred: {
+      type: Boolean,
+      default: false,
+    },
     files: {
       type: [fileSchema],
       default: () => [
