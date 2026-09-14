@@ -42,6 +42,8 @@ export const register = async (req, res) => {
       },
     });
   } catch (error) {
+      console.error("REGISTER ERROR:", error);
+      
     return res.status(500).json({
       success: false,
       message: "User regstered failed ",
@@ -119,7 +121,7 @@ export const logout = async (req, res) => {
 
 export const getMe = async (req, res) => {
   try {
-    const user = await User.findById(req.user.userid);
+    const user = await User.findById(req.user.userId);
 
     if (!user) {
       return res.status(404).json({
