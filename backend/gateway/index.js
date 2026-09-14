@@ -35,7 +35,17 @@ app.use("/api/project", proxy(process.env.PROJECT_URL, {
         return res.status(503).json({
             success: false,
             message: "Project service is unavailable. Please ensure backend/services/project is running on port 3002."
-        });
+        }); 
+    }
+}))
+
+app.use("/api/file", proxy(process.env.FILE_URL, {
+    parseReqBody: false,
+    proxyErrorHandler: function (err, res, next) {
+        return res.status(503).json({
+            success: false,
+            message: "File service is unavailable. Please ensure backend/services/project is running on port 3003."
+        }); 
     }
 }))
 
