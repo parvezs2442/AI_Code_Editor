@@ -1,3 +1,4 @@
+import mongoose from "mongoose";
 import Project from "../model/Project.js";
 
 const getStarterFiles = (language) => {
@@ -109,6 +110,13 @@ export const getProjectById = async (req, res) => {
   try {
     const { id } = req.params;
 
+    if (!mongoose.Types.ObjectId.isValid(id)) {
+      return res.status(400).json({
+        success: false,
+        message: "Invalid project ID format",
+      });
+    }
+
     const project = await Project.findOne({
       _id: id,
       user: req.user.userId,
@@ -137,6 +145,13 @@ export const getProjectById = async (req, res) => {
 export const toggleStarProject = async (req, res) => {
   try {
     const { id } = req.params;
+
+    if (!mongoose.Types.ObjectId.isValid(id)) {
+      return res.status(400).json({
+        success: false,
+        message: "Invalid project ID format",
+      });
+    }
 
     const project = await Project.findOne({
       _id: id,
@@ -171,6 +186,14 @@ export const toggleStarProject = async (req, res) => {
 export const updateProject = async (req, res) => {
   try {
     const { id } = req.params;
+
+    if (!mongoose.Types.ObjectId.isValid(id)) {
+      return res.status(400).json({
+        success: false,
+        message: "Invalid project ID format",
+      });
+    }
+
     const { name, description, language, files, isStarred } = req.body;
 
     const updateData = {};
@@ -183,7 +206,7 @@ export const updateProject = async (req, res) => {
     const project = await Project.findOneAndUpdate(
       { _id: id, user: req.user.userId },
       { $set: updateData },
-      { new: true, runValidators: true }
+      { returnDocument: "after", runValidators: true }
     );
 
     if (!project) {
@@ -210,6 +233,13 @@ export const updateProject = async (req, res) => {
 export const deleteProject = async (req, res) => {
   try {
     const { id } = req.params;
+
+    if (!mongoose.Types.ObjectId.isValid(id)) {
+      return res.status(400).json({
+        success: false,
+        message: "Invalid project ID format",
+      });
+    }
 
     const project = await Project.findOneAndDelete({
       _id: id,
