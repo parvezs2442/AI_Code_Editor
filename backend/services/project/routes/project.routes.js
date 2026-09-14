@@ -2,24 +2,25 @@ import express from "express";
 import {
   createProject,
   getProjects,
+  getStarredProjects,
   getProjectById,
-  updateProject,
+  toggleStar,
   deleteProject,
-  toggleStarProject,
-} from "../controller/project.controller.js";
-import { authMiddleware } from "../middleware/auth.middleware.js";
+} from "../controllers/project.controller.js";
 
 const router = express.Router();
 
-// All project routes require authentication
-router.use(authMiddleware);
+// Primary endpoints matching frontend/features/project.js
+router.post("/", createProject);
+router.get("/", getProjects);
+router.get("/starred", getStarredProjects);
+router.get("/:id", getProjectById);
+router.patch("/:id", toggleStar);
+router.delete("/:id", deleteProject);
 
+// Backward-compatible aliases
 router.post("/create", createProject);
 router.get("/all", getProjects);
-router.get("/:id", getProjectById);
-router.patch("/:id/star", toggleStarProject);
-router.put("/:id/star", toggleStarProject);
-router.put("/:id", updateProject);
-router.delete("/:id", deleteProject);
+router.patch("/:id/star", toggleStar);
 
 export default router;

@@ -30,8 +30,7 @@ app.use(
 app.use(express.json());
 app.use(cookieParser());
 
-// Health check endpoint
-app.get("/", (req, res) => {
+app.get("/health", (req, res) => {
   return res.status(200).json({
     success: true,
     message: "Hello from Project Service",

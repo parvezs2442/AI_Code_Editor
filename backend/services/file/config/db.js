@@ -1,16 +1,12 @@
 import mongoose from "mongoose"
 import dotenv from "dotenv"
-dotenv.config();
+dotenv.config()
 
-const dbConnect = async() => {
-    try{
-        await mongoose.connect(process.env.MONGO_URL)
-        console.log("Database Connected")
-
-    }catch(error){
-        console.log("Error connecting db ", error)
-        throw error;
+export const connectDb=async () => {
+    try {
+        await mongoose.connect(process.env.MONGODB_URI)
+        console.log("file db connected successfully")
+    } catch (error) {
+        console.log(error)
     }
 }
-
-export default dbConnect;

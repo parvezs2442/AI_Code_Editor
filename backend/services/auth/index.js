@@ -1,46 +1,21 @@
-
 import express from "express"
 import dotenv from "dotenv"
-import dbConnect from "./config/db.js";
-import router from "./routes/auth.routes.js";
-import cookieParser from "cookie-parser";
-import cors from "cors";
-dotenv.config();
+import cookieParser from "cookie-parser"
+import { connectDb } from "./config/db.js"
+import router from "./routes/auth.route.js"
+dotenv.config()
+const port = process.env.PORT || 3001
 
-
-const app = express();
-
-app.use(cors({
-    origin: (origin, callback) => {
-        if (!origin || origin.startsWith("http://localhost:") || origin.startsWith("http://127.0.0.1:")) {
-            callback(null, true);
-        } else {
-            callback(new Error("Not allowed by CORS"));
-        }
-    },
-    credentials: true
-}));
-
+const app=express()
 app.use(express.json())
 app.use(cookieParser())
-const PORT = process.env.PORT || 3000
 
-
-
-app.get("/", (req,res) => {
-    return res.status(200).json({
-        success:true,
-        message:"Hello from Auth Service"
-    })
+app.use("/",router)
+app.get("/",(req,res)=>{
+  res.json({"message":"hello from auth"})
 })
 
-app.use("/", router)
-
-try{
-    await dbConnect();
-    app.listen(PORT, () => {
-    console.log(`Auth Service is running at ${PORT}`)
-    })
-}catch(error){
-    process.exit(1);
-}
+app.listen(port,()=>{
+    connectDb()
+    console.log(`auth started at ${port}`)
+})
