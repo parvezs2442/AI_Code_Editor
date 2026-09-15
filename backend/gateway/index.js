@@ -128,6 +128,26 @@ app.use(
   })
 );
 
+app.use(
+  "/api/payment",
+  injectUserFromSession,
+  proxy(process.env.PAYMENT_URL || "http://localhost:8006", {
+    parseReqBody: false,
+    proxyReqOptDecorator: function (proxyReqOpts, srcReq) {
+      if (srcReq.headers["x-user-id"]) {
+        proxyReqOpts.headers["x-user-id"] = srcReq.headers["x-user-id"];
+      }
+      return proxyReqOpts;
+    },
+    proxyErrorHandler: function (err, res, next) {
+      return res.status(503).json({
+        success: false,
+        message: "Payment service is unavailable. Please ensure backend/services/payment is running on port 8006.",
+      });
+    },
+  })
+);
+
 app.get("/", (req, res) => {
   return res.status(200).json({
     success: true,

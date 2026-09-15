@@ -2,6 +2,9 @@ import { ArrowLeft, Check, Crown, Currency, Sparkles, Zap } from 'lucide-react';
 import React from 'react'
 import { useNavigate } from 'react-router-dom';
 import { motion } from "motion/react"
+import { me } from '../features/me';
+import { useDispatch } from 'react-redux';
+import { setUserData } from '../redux/userSlice';
 import { createPayment, verifyPayment } from '../features/payment';
 const plans = [
     {
@@ -67,12 +70,13 @@ const plans = [
 
 function Plan() {
     const navigate = useNavigate()
+    const dispatch = useDispatch()
 
     const handlePayment = async (plan) => {
         try {
             if (plan.key == "free" || plan.current) return;
             const data = await createPayment(plan.key)
-            console.log(data)
+            if (!data?.order) return;
             const options = {
                 key: data.key_id,
                 amount: data.order.amount,
@@ -82,19 +86,23 @@ function Plan() {
                 order_id: data.order.id,
                 handler: async (response) => {
                     const { razorpay_order_id, razorpay_payment_id, razorpay_signature } = response
-                    const data = await verifyPayment({ razorpay_order_id, razorpay_payment_id, razorpay_signature })
-                    console.log(data)
+                    const result = await verifyPayment({ razorpay_order_id, razorpay_payment_id, razorpay_signature })
+                    if (result) {
+                        const updatedUser = await me()
+                        if (updatedUser) {
+                            dispatch(setUserData(updatedUser))
+                        }
+                        navigate('/')
+                    }
                 },
                 theme: {
-                    color:
-                        "#4f46e5",
+                    color: "#4f46e5",
                 },
-
             }
             const razorpay = new window.Razorpay(options)
             razorpay.open()
         } catch (error) {
-            console.log(error)
+            console.error("Payment error:", error)
         }
     }
     return (

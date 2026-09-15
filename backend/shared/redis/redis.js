@@ -6,6 +6,9 @@ if (redisUrl.startsWith("http://")) {
 } else if (redisUrl.startsWith("https://")) {
   redisUrl = redisUrl.replace("https://", "rediss://");
 }
+if (redisUrl.includes("localhost")) {
+  redisUrl = redisUrl.replace("localhost", "127.0.0.1");
+}
 
 let lastLogTime = 0;
 
