@@ -3,14 +3,14 @@ import TopBar from '../components/TopBar'
 import ActivityBar from '../components/ActivityBar'
 import { AnimatePresence, motion } from 'motion/react'
 import Explorer from '../components/Explorer'
-import { useParams, useNavigate } from 'react-router-dom'
+import { useParams } from 'react-router-dom'
 import { getProjectById } from '../features/project'
 import { useDispatch } from 'react-redux'
 import { setCurrentProject } from '../redux/projectSlice'
 import { useEffect } from 'react'
 import { useState } from 'react'
 import { getTree } from '../features/file'
-import { Bot, Code2, Eye, Files, Home, Maximize2, Minimize2, TerminalSquare } from 'lucide-react'
+import { Bot, Code2, Eye, Files, Maximize2, Minimize2, TerminalSquare } from 'lucide-react'
 import Preview from '../components/Preview'
 import Editor from '../components/Editor'
 import BottomPanel from '../components/BottomPanel'
@@ -18,7 +18,6 @@ import AiChat from '../components/AiChat'
 
 function ProjectPage() {
   const { id } = useParams()
-  const navigate = useNavigate()
   const [showExplorer, setShowExplorer] = useState(true)
   const [showAiChat, setShowAiChat] = useState(true)
   const [showTerminal, setShowTerminal] = useState(true)
@@ -227,20 +226,13 @@ function ProjectPage() {
 
       <div className='flex items-center justify-around border-t border-white/[0.06] bg-[#0f0f12] py-2 md:hidden'>
         <button
-          onClick={() => navigate('/')}
-          className="flex flex-col items-center gap-1 px-3 py-1 text-[11px] font-medium text-zinc-500 hover:text-white transition-colors"
-        >
-          <Home size={18} />
-          Home
-        </button>
-
-        <button
           onClick={() => {
             setMobilePane("explorer")
             setShowExplorer(true)
           }}
-          className={`flex flex-col items-center gap-1 px-3 py-1 text-[11px] font-medium transition-colors ${mobilePane === "explorer" ? "text-white" : "text-zinc-500"
+          className={`flex flex-col items-center gap-1 px-4 py-1 text-[11px] font-medium transition-colors ${mobilePane === "explorer" ? "text-white" : "text-zinc-500"
             }`}
+
         >
           <Files size={18}/>
           Files
@@ -249,7 +241,7 @@ function ProjectPage() {
         <button  onClick={() => {
             setMobilePane("editor")
           }}
-          className={`flex flex-col items-center gap-1 px-3 py-1 text-[11px] font-medium transition-colors ${mobilePane === "editor" ? "text-white" : "text-zinc-500"
+          className={`flex flex-col items-center gap-1 px-4 py-1 text-[11px] font-medium transition-colors ${mobilePane === "editor" ? "text-white" : "text-zinc-500"
             }`}
 >
           <Code2 size={18}/>
@@ -261,19 +253,22 @@ function ProjectPage() {
             setMobilePane("chat")
             setShowAiChat(true)
           }}
-          className={`flex flex-col items-center gap-1 px-3 py-1 text-[11px] font-medium transition-colors ${mobilePane === "chat" ? "text-white" : "text-zinc-500"
+          className={`flex flex-col items-center gap-1 px-4 py-1 text-[11px] font-medium transition-colors ${mobilePane === "chat" ? "text-white" : "text-zinc-500"
             }`}
+
         >
           <Bot size={18}/>
           AI Chat
+
         </button>
 
         <button
          onClick={() => {
             setShowBottomPanel(v=>!v)
           }}
-          className={`flex flex-col items-center gap-1 px-3 py-1 text-[11px] font-medium transition-colors ${showBottomPanel? "text-white" : "text-zinc-500"
+          className={`flex flex-col items-center gap-1 px-4 py-1 text-[11px] font-medium transition-colors ${showBottomPanel? "text-white" : "text-zinc-500"
             }`}
+
         >
          <TerminalSquare size={18}/>
          Terminal

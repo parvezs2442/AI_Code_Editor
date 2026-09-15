@@ -11,14 +11,11 @@ function CreateProjectModal({ openModal, onClose }) {
     const [loading, setLoading] = useState(false)
     const dispatch = useDispatch()
     const handleCreateProject = async () => {
-        if (!name.trim()) return;
         setLoading(true)
         const data = await createProject({ name, description })
-        if (data && data._id) {
-            await createRootFolder({projectId:data._id,projectName:data.name})
-            dispatch(addNewProject(data))
-            onClose()
-        }
+        await createRootFolder({projectId:data._id,projectName:data.name})
+        onClose()
+        dispatch(addNewProject(data))
         setLoading(false)
     }
     return (

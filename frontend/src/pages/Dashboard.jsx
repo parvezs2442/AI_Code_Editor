@@ -24,25 +24,14 @@ function Dashboard() {
     const dispatch = useDispatch()
     const { userData } = useSelector(state => state.user)
     const { projects, starredProjects } = useSelector(state => state.project)
-    const [loginError, setLoginError] = useState(null)
     const handleLogin = async () => {
         setLoading(true)
-        setLoginError(null)
-        try {
-            const result = await signInWithPopup(auth, googleProvider)
-            const token = await result.user.getIdToken()
-            const data = await login(token)
-            if (data && data._id) {
-                dispatch(setUserData(data))
-            } else {
-                setLoginError(data?.error || "Login failed on server. Please check backend auth service.")
-            }
-        } catch (error) {
-            console.error("Firebase Login Error:", error)
-            setLoginError(error.message || "Failed to sign in with Google")
-        } finally {
-            setLoading(false)
-        }
+        const result = await signInWithPopup(auth, googleProvider)
+        const token = await result.user.getIdToken()
+        const data = await login(token)
+        dispatch(setUserData(data))
+        setLoading(false)
+
     }
 
     const fetchAllProjects = async () => {
@@ -94,12 +83,6 @@ function Dashboard() {
                         <FcGoogle />
                         {loading ? "Signing in..." : "Continue with Google"}
                     </button>
-
-                    {loginError && (
-                        <p className='mt-3 rounded-lg bg-red-500/10 px-3 py-2 text-xs text-red-500'>
-                            {loginError}
-                        </p>
-                    )}
 
                     <p className='mt-5 text-[11px] text-slate-400 dark:text-slate-600'>By continuing you agree to our Terms & Privacy Policy.</p>
 
@@ -243,7 +226,7 @@ Menu
                                     className="animate-spin text-slate-400 dark:text-slate-500"
                                 />
                             </div>
-                        ) : (!Array.isArray(projects) || projects.length === 0) ? (
+                        ) : projects?.length == 0 ? (
                             <div className='mb-8 flex flex-col items-center justify-center rounded-2xl border border-dashed border-slate-300 bg-white/40  px-4
                   py-12
                   sm:py-16
@@ -275,8 +258,8 @@ Menu
                   lg:grid-cols-3
                   xl:grid-cols-4
 '>
-                                {Array.isArray(projects) && projects.map((p, i) => (
-                                    <ProjectCard key={p._id || i} project={p} />
+                                {projects?.map((p, i) => (
+                                    <ProjectCard project={p} />
                                 ))}
                             </div>
                         )}

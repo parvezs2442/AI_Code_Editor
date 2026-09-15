@@ -108,6 +108,26 @@ app.use(
   })
 );
 
+app.use(
+  "/api/ai",
+  injectUserFromSession,
+  proxy(process.env.AI_URL || "http://localhost:8004", {
+    parseReqBody: false,
+    proxyReqOptDecorator: function (proxyReqOpts, srcReq) {
+      if (srcReq.headers["x-user-id"]) {
+        proxyReqOpts.headers["x-user-id"] = srcReq.headers["x-user-id"];
+      }
+      return proxyReqOpts;
+    },
+    proxyErrorHandler: function (err, res, next) {
+      return res.status(503).json({
+        success: false,
+        message: "AI service is unavailable. Please ensure backend/services/ai is running on port 8004.",
+      });
+    },
+  })
+);
+
 app.get("/", (req, res) => {
   return res.status(200).json({
     success: true,

@@ -12,7 +12,7 @@ function NavBar() {
      const [menuOpen,setMenuOpen]=useState(false)
      const dispatch=useDispatch()
      const {userData}=useSelector(state=>state.user)
-     const name=userData?.name || "Guest"
+     const name=userData.name || "Guest"
      const initials=name
      .split(" ")
      .map((w)=>w[0])
@@ -26,7 +26,7 @@ const handleLogout=async ()=>{
 }
 
     useEffect(()=>{
-     if(typeof window === "undefined")return;
+     if(typeof window==undefined)return;
      const theme=window.localStorage.getItem("theme")
      const dark=theme?theme=="dark":true
      document.documentElement.classList.toggle("dark",dark)

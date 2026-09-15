@@ -175,7 +175,15 @@ function AiChat({ projectId, history = [], reloadTree }) {
 
 
         } catch (error) {
-            console.log(error)
+            console.error("AI chat error:", error)
+            setMessages((prev) => [
+                ...prev,
+                {
+                    role: "assistant",
+                    content: error.message || "AI request failed.",
+                    error: true,
+                },
+            ])
             return null
         }
         finally{
@@ -203,7 +211,7 @@ function AiChat({ projectId, history = [], reloadTree }) {
                     {messages.map((msg, i) => {
                         if (msg.role == "tool") {
                             return (
-                                <ToolBadge toolType={msg.toolType} detail={msg.detail} />
+                                <ToolBadge key={i} toolType={msg.toolType} detail={msg.detail} />
                             )
                         }
                         const isUser = msg.role == "user"
