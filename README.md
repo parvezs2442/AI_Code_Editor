@@ -1,4 +1,4 @@
-# ⚡ VertexAI — Next-Gen Cloud Code Editor & AI Workspace
+# ⚡ VertexAI — Next-Gen Cloud Code Editor & Agentic AI Workspace
 
 <p align="center">
   <img src="https://img.shields.io/badge/Frontend-React%2018%20%7C%20Vite-61DAFB?logo=react&logoColor=black" alt="React & Vite" />
@@ -6,10 +6,13 @@
   <img src="https://img.shields.io/badge/Database-MongoDB%20Atlas-47A248?logo=mongodb&logoColor=white" alt="MongoDB" />
   <img src="https://img.shields.io/badge/Cache-Redis-DC382D?logo=redis&logoColor=white" alt="Redis" />
   <img src="https://img.shields.io/badge/Auth-Firebase%20Admin-FFCA28?logo=firebase&logoColor=black" alt="Firebase Auth" />
+  <img src="https://img.shields.io/badge/AI-LangGraph%20%7C%20OpenRouter-blue?logo=openai&logoColor=white" alt="LangGraph AI" />
+  <img src="https://img.shields.io/badge/Terminal-WebSocket%20%7C%20node--pty-black?logo=gnometerminal&logoColor=white" alt="Terminal" />
+  <img src="https://img.shields.io/badge/Payments-Razorpay-blue?logo=razorpay&logoColor=white" alt="Razorpay" />
   <img src="https://img.shields.io/badge/Architecture-Microservices-blueviolet" alt="Microservices" />
 </p>
 
-A powerful, full-stack cloud coding environment and project management platform built on a scalable **Microservices Architecture**. Features Firebase Google authentication, Redis distributed session management, a responsive multi-tab code editor, interactive file tree hierarchy, live preview, terminal integration, and an intelligent **VertexAI Chat Assistant**.
+A state-of-the-art, full-stack cloud code editor and IDE built on an enterprise **Microservices Architecture**. Features Firebase Google authentication, Redis distributed session management, a multi-tab syntax-highlighted code editor, file tree hierarchy, live HTML/React preview, real-time WebSocket interactive terminal powered by `node-pty`, automated Razorpay payment subscriptions, and an autonomous **Agentic AI Assistant** powered by LangGraph that can directly inspect, create, update, and delete files inside your project.
 
 ---
 
@@ -17,6 +20,7 @@ A powerful, full-stack cloud coding environment and project management platform 
 
 - [System Architecture](#-system-architecture)
 - [Key Features](#-key-features)
+- [Microservices Overview](#-microservices-overview)
 - [User Workflow](#-user-workflow)
 - [Tech Stack](#-tech-stack)
 - [Repository Structure](#-repository-structure)
@@ -25,8 +29,7 @@ A powerful, full-stack cloud coding environment and project management platform 
   - [1. Clone Repository](#1-clone-repository)
   - [2. Environment Configuration](#2-environment-configuration)
   - [3. Install Dependencies](#3-install-dependencies)
-  - [4. Start Backend Microservices](#4-start-backend-microservices)
-  - [5. Start Frontend Client](#5-start-frontend-client)
+  - [4. Run All Services (1-Click or Manual)](#4-run-all-services)
 - [API Reference](#-api-reference)
 - [Security & Environment Hardening](#-security--environment-hardening)
 - [License](#-license)
@@ -39,85 +42,95 @@ The platform is designed around a decoupled, fault-tolerant microservice archite
 
 ```mermaid
 flowchart TD
-    Client["Client Web App (React + Vite :5173)"]
+    Client["Client Web App (React 18 + Vite :5173)"]
     Gateway["API Gateway (Express :3000)"]
     AuthSvc["Auth Service (:3001)"]
     ProjectSvc["Project Service (:3002)"]
     FileSvc["File Service (:3003)"]
+    AiSvc["AI Service (LangGraph :8004)"]
+    TerminalSvc["Terminal Service (node-pty WebSocket :8005)"]
+    PaymentSvc["Payment Service (Razorpay :8006)"]
     Redis[("Redis Cache / Session Store :6379")]
-    MongoAuth[("MongoDB Atlas - Auth DB")]
-    MongoProj[("MongoDB Atlas - Project DB")]
-    MongoFile[("MongoDB Atlas - File DB")]
-    Firebase["Firebase Admin SDK"]
+    MongoAuth[("MongoDB - Auth DB")]
+    MongoProj[("MongoDB - Project DB")]
+    MongoFile[("MongoDB - File DB")]
+    MongoAi[("MongoDB - AI DB")]
+    MongoTerm[("MongoDB - Terminal DB")]
+    MongoPay[("MongoDB - Payment DB")]
+    OpenRouter["OpenRouter LLM (DeepSeek)"]
+    Razorpay["Razorpay Payment Gateway"]
 
     Client -->|HTTP / Cookies| Gateway
+    Client <-->|WebSocket| TerminalSvc
     Gateway -->|/api/auth/*| AuthSvc
     Gateway -->|/api/project/*| ProjectSvc
     Gateway -->|/api/file/*| FileSvc
+    Gateway -->|/api/ai/*| AiSvc
+    Gateway -->|/api/payment/*| PaymentSvc
 
     AuthSvc <--> Redis
     AuthSvc <--> MongoAuth
-    AuthSvc <--> Firebase
-
     ProjectSvc <--> Redis
     ProjectSvc <--> MongoProj
-
     FileSvc <--> MongoFile
+
+    AiSvc <--> MongoAi
+    AiSvc <--> OpenRouter
+    AiSvc -->|File Operations| FileSvc
+    AiSvc -->|Credit Deduction| AuthSvc
+
+    TerminalSvc <--> MongoTerm
+    TerminalSvc -->|Workspace Sync| FileSvc
+
+    PaymentSvc <--> MongoPay
+    PaymentSvc <--> Razorpay
+    PaymentSvc -->|Add Credits| AuthSvc
 ```
 
 ---
 
 ## ✨ Key Features
 
+### 🤖 Agentic AI Assistant (LangGraph + OpenRouter)
+- **Autonomous Filesystem Tools**: The AI doesn't just write snippets; it directly executes filesystem actions (`get_tree`, `create_file`, `update_file`, `delete_file`, `create_folder`, `get_file`) to build full working projects.
+- **Server-Sent Events (SSE) Streaming**: Real-time token streaming with live tool badge notifications in the chat interface.
+- **Credit-Based Execution**: Integrated credit accounting with automatic pre-checks and deduction per AI task.
+
+### 🖥️ Interactive Web Terminal (WebSocket + node-pty)
+- **Real-Time Shell Execution**: Powered by `node-pty` and `xterm.js`, spawning PowerShell on Windows and Bash on Linux.
+- **Workspace Syncing**: Project files are automatically extracted into an isolated workspace directory before launching the terminal.
+- **Dynamic Resizing**: Bidirectional terminal dimension synchronization and ANSI color support.
+
+### 💳 Plans & Razorpay Payment Integration
+- **Subscription Tiers**: Free (100 credits), Pro (500 credits @ ₹299), and Team (2,000 credits @ ₹799).
+- **Secure Payments**: Razorpay order generation and HMAC SHA256 cryptographic signature verification.
+- **Automated Credit Top-Up**: Automatically increments user credit balance upon successful transaction verification.
+
 ### 🔐 Authentication & Session Security
-- **Firebase Google Sign-In**: Client-side OAuth login via Firebase.
-- **Backend Verification**: ID token verification using Firebase Admin SDK.
-- **Distributed Sessions**: Cryptographically secure session IDs generated and cached in Redis with automatic TTL expiration.
+- **Firebase Google Sign-In**: Client-side OAuth authentication with backend token verification via Firebase Admin SDK.
+- **Distributed Redis Sessions**: Session tokens stored with automatic TTL expiration.
 - **HTTP-Only Cookies**: Protection against XSS and session hijacking.
 
-### 📊 Modern Dashboard
-- **Projects Overview**: Grid of user projects with real-time metadata.
-- **Starred Projects**: Bookmark favorite projects with a single click without opening the editor.
-- **Create Project Modal**: Intuitive modal with title, description, and instant validation.
-- **Credit Counter**: Real-time AI credits tracker dynamically fetched from user profile.
-
 ### 💻 Rich IDE Workspace (`/project/:id`)
-- **TopBar Navigation**:
-  - `← VertexAI` quick link back to Dashboard.
-  - Active project title with folder indicators.
-  - Dedicated **Dashboard** button.
-  - **Live Preview Toggle** switch.
-- **Activity Bar (Sidebar)**:
-  - **Dashboard Shortcut**: Return home with one click.
-  - **File Explorer**: Browse and manage project folder hierarchies.
-  - **VertexAI Chat**: Built-in coding assistant panel.
-  - **Terminal**: Integrated console panel at the bottom.
-  - **User Profile Popup (Bottom-Left)**: Displays user avatar, name, email, credits badge, Dashboard link, and Logout button.
-- **Code Editor & Tabs**:
-  - Multi-file tab navigation with active state tracking.
-  - Syntax highlighted code editing.
-- **Live Preview Pane**:
-  - Renders project output in real time.
-  - Supports fullscreen mode and responsive split-screen view.
-- **Integrated Terminal**:
-  - Bottom expandable terminal panel for command monitoring.
+- **Multi-Tab Code Editor**: Syntax-highlighted code editing with active tab tracking and clean file switching.
+- **Interactive File Explorer**: Full hierarchical folder and file management.
+- **Live Preview Pane**: Real-time HTML/JS and React iframe preview with fullscreen support.
+- **Bottom Panel**: Expandable, collapsible terminal console.
 
 ---
 
-## 🔄 User Workflow
+## 🧩 Microservices Overview
 
-1. **Authentication**:
-   - User visits the app and signs in via Google OAuth.
-   - Auth Service validates credentials, provisions a User document in MongoDB, creates a Redis session, and sets an HTTP-only session cookie.
-2. **Dashboard Management**:
-   - User views existing projects or creates a new project using the **+ New Project** button.
-   - User can star/unstar projects directly on the project card without leaving the page.
-   - User opens any project by clicking the project title or **Open Project →**.
-3. **Coding in IDE Workspace**:
-   - File Service loads the project file tree hierarchy.
-   - Selecting a file opens it in a new editor tab.
-   - The user writes code, toggles the **Live Preview**, or interacts with the **AI Assistant**.
-   - User can inspect credits or account info in the bottom-left avatar popover or return to the Dashboard at any time via TopBar/ActivityBar.
+| Microservice | Port | Description | Database / Cache |
+| :--- | :--- | :--- | :--- |
+| **API Gateway** | `3000` | Reverse proxy routing, CORS handling, cookie session extraction, and user injection | Redis |
+| **Auth Service** | `3001` | Firebase OAuth verification, user profiles, session storage, credit management | MongoDB (`/auth`), Redis |
+| **Project Service** | `3002` | Project CRUD, starring, metadata management, and recent project caching | MongoDB (`/project`), Redis |
+| **File Service** | `3003` | Recursive tree builder, file/folder CRUD, and soft-delete cascading | MongoDB (`/file`), Redis |
+| **AI Service** | `8004` | LangGraph agentic workflow, OpenRouter DeepSeek integration, SSE streaming | MongoDB (`/ai`) |
+| **Terminal Service** | `8005` | WebSocket terminal server, `node-pty` shell spawning, project workspace sync | MongoDB (`/terminal`) |
+| **Payment Service** | `8006` | Razorpay order creation, payment signature verification, credit top-up | MongoDB (`/payment`) |
+| **Frontend Client** | `5173` | React 18, Vite, Redux Toolkit, Tailwind CSS, Framer Motion, XTerm.js | Browser LocalStorage |
 
 ---
 
@@ -125,14 +138,15 @@ flowchart TD
 
 | Domain | Technologies & Libraries |
 | :--- | :--- |
-| **Frontend** | React 18, Vite, Redux Toolkit, Framer Motion, Lucide React, Axios, React Router v6 |
+| **Frontend** | React 18, Vite, Redux Toolkit, Framer Motion, Lucide React, Axios, XTerm.js (`@xterm/xterm`), React Router v6 |
 | **Styling** | Vanilla CSS, Tailwind CSS utilities, Modern Glassmorphism & Dark Mode Tokens |
 | **API Gateway** | Express.js, `express-http-proxy`, CORS, Cookie Parser, Dotenv |
-| **Auth Service** | Node.js, Express, Firebase Admin SDK, Mongoose, Redis (`ioredis`), Crypto |
-| **Project Service** | Node.js, Express, Mongoose, Redis (`ioredis`), Dotenv |
-| **File Service** | Node.js, Express, Mongoose, Tree Builder Utility, Dotenv |
-| **Databases** | MongoDB Atlas (Cloud NoSQL), Redis (In-Memory Cache & Session Store) |
-| **DevOps & Tools** | Docker, Docker Compose, Git |
+| **AI & LLM** | `@langchain/langgraph`, `@langchain/openrouter`, `@langchain/core`, DeepSeek Chat |
+| **Terminal** | `node-pty`, `socket.io`, `socket.io-client`, XTerm Fit Addon |
+| **Payments** | Razorpay SDK, Crypto (HMAC SHA256) |
+| **Databases & Cache** | MongoDB Atlas, Redis (`ioredis`) |
+| **Authentication** | Firebase Admin SDK, Firebase Client SDK, Crypto UUID |
+| **DevOps** | Docker, Docker Compose, Windows Batch Scripting |
 
 ---
 
@@ -140,50 +154,50 @@ flowchart TD
 
 ```text
 AI_Code_Editor/
-├── .env.example                     # Root environment variable template
-├── .gitignore                       # Master gitignore for secrets and builds
+├── .env.example                     # Master environment variable template
+├── .gitignore                       # Master gitignore protecting credentials & builds
 ├── README.md                        # Documentation & setup guide
+├── start-dev.bat                    # 1-Click launcher for all services on Windows
 ├── backend/
-│   ├── docker-compose.yml           # Multi-container service orchestration
+│   ├── docker-compose.yml           # Redis container orchestration
 │   ├── package.json
-│   ├── gateway/                     # Central API Gateway (Port 3000)
-│   │   ├── index.js
+│   ├── gateway/                     # API Gateway (Port 3000)
+│   │   ├── index.js                 # Proxy routes (/api/auth, /api/project, /api/file, /api/ai, /api/payment)
 │   │   ├── .env.example
 │   │   └── package.json
 │   ├── services/
-│   │   ├── auth/                    # Authentication Service (Port 3001)
-│   │   │   ├── config/              # DB & Firebase Admin config
-│   │   │   ├── controllers/         # Login, getMe, logout, credits
+│   │   ├── auth/                    # Auth Service (Port 3001)
+│   │   │   ├── controllers/         # Login, logout, getMe, credits
 │   │   │   ├── models/              # User Schema
-│   │   │   ├── routes/              # Auth routes
-│   │   │   ├── Dockerfile
-│   │   │   └── .env.example
-│   │   ├── project/                 # Project Management Service (Port 3002)
-│   │   │   ├── controllers/         # Project CRUD & star toggle
+│   │   │   └── routes/
+│   │   ├── project/                 # Project Service (Port 3002)
+│   │   │   ├── controllers/         # Project CRUD & starring
 │   │   │   ├── models/              # Project Schema
-│   │   │   ├── routes/              # Project routes
-│   │   │   └── .env.example
-│   │   └── file/                    # File & Directory Service (Port 3003)
-│   │       ├── controllers/         # File tree & file operations
-│   │       ├── models/              # File Schema
-│   │       ├── utils/               # Recursive tree builder
-│   │       ├── Dockerfile
-│   │       └── .env.example
+│   │   │   └── routes/
+│   │   ├── file/                    # File Service (Port 3003)
+│   │   │   ├── controllers/         # File tree & file operations
+│   │   │   ├── models/              # File Schema
+│   │   │   └── utils/               # Recursive tree builder
+│   │   ├── ai/                      # AI Service (Port 8004)
+│   │   │   ├── controllers/         # SSE streaming chat controller
+│   │   │   ├── graph/               # LangGraph workflow & filesystem tools
+│   │   │   └── utils/               # LLM client & credit deduction
+│   │   ├── terminal/                # Terminal Service (Port 8005)
+│   │   │   └── index.js             # WebSocket server & node-pty shell
+│   │   └── payment/                 # Payment Service (Port 8006)
+│   │       ├── controllers/         # Razorpay orders & verification
+│   │       ├── models/              # Payment Schema
+│   │       └── routes/
 │   └── shared/                      # Shared modules
 │       └── redis/                   # Centralized Redis connection client
 └── frontend/                        # React + Vite Client (Port 5173)
-    ├── .env.example
-    ├── .gitignore
-    ├── firebase.js                  # Client Firebase configuration
-    ├── index.html
-    ├── package.json
+    ├── index.html                   # HTML template with Razorpay Checkout SDK
     ├── vite.config.js
     └── src/
-        ├── components/              # ActivityBar, Editor, Explorer, TopBar, etc.
-        ├── features/                # Axios API callers (auth, project, file)
+        ├── components/              # ActivityBar, Editor, Explorer, AiChat, Terminal, etc.
+        ├── features/                # Axios API callers (auth, project, file, payment)
         ├── pages/                   # Dashboard, ProjectPage, Plan
-        ├── redux/                   # Redux slices (userSlice, projectSlice)
-        └── utils/                   # Helper utilities
+        └── redux/                   # Redux slices (userSlice, projectSlice)
 ```
 
 ---
@@ -192,9 +206,11 @@ AI_Code_Editor/
 
 ### Prerequisites
 - [Node.js](https://nodejs.org/) (v18 or higher)
-- [MongoDB Atlas](https://www.mongodb.com/cloud/atlas) or local MongoDB instance
-- [Redis](https://redis.io/) (v6 or higher) running locally on port `6379`
-- [Firebase Console](https://console.firebase.google.com/) project with Google Authentication enabled
+- [Docker Desktop](https://www.docker.com/products/docker-desktop/) (for Redis)
+- [MongoDB Atlas](https://www.mongodb.com/cloud/atlas) account
+- [OpenRouter API Key](https://openrouter.ai/settings/keys)
+- [Razorpay Test Account](https://dashboard.razorpay.com/) (optional, for payments)
+- [Firebase Console](https://console.firebase.google.com/) project with Google Auth enabled
 
 ---
 
@@ -209,7 +225,7 @@ cd AI_Code_Editor
 
 ### 2. Environment Configuration
 
-Copy the `.env.example` templates to `.env` in each service folder:
+Create `.env` files in each service directory using the provided `.env.example` templates:
 
 #### A. Gateway (`backend/gateway/.env`)
 ```env
@@ -217,24 +233,24 @@ PORT=3000
 AUTH_URL=http://localhost:3001
 PROJECT_URL=http://localhost:3002
 FILE_URL=http://localhost:3003
+AI_URL=http://localhost:8004
+PAYMENT_URL=http://localhost:8006
+TERMINAL_URL=http://localhost:8005
 REDIS_URL=redis://localhost:6379
 ```
 
 #### B. Auth Service (`backend/services/auth/.env`)
 ```env
 PORT=3001
-MONGODB_URI=mongodb+srv://<username>:<password>@cluster.mongodb.net/auth
+MONGODB_URI=mongodb+srv://<user>:<password>@cluster.mongodb.net/auth
 REDIS_URL=redis://localhost:6379
 NODE_ENV=development
-FIREBASE_PROJECT_ID=your-firebase-project-id
-FIREBASE_CLIENT_EMAIL=firebase-adminsdk-xxxxx@your-firebase-project-id.iam.gserviceaccount.com
-FIREBASE_PRIVATE_KEY="-----BEGIN PRIVATE KEY-----\nYOUR_KEY_HERE\n-----END PRIVATE KEY-----\n"
 ```
 
 #### C. Project Service (`backend/services/project/.env`)
 ```env
 PORT=3002
-MONGODB_URI=mongodb+srv://<username>:<password>@cluster.mongodb.net/project
+MONGODB_URI=mongodb+srv://<user>:<password>@cluster.mongodb.net/project
 REDIS_URL=redis://localhost:6379
 JWT_SECRET=your_jwt_secret_key
 ```
@@ -242,39 +258,61 @@ JWT_SECRET=your_jwt_secret_key
 #### D. File Service (`backend/services/file/.env`)
 ```env
 PORT=3003
-MONGODB_URI=mongodb+srv://<username>:<password>@cluster.mongodb.net/file
+MONGODB_URI=mongodb+srv://<user>:<password>@cluster.mongodb.net/file
 REDIS_URL=redis://localhost:6379
 ```
 
-#### E. Frontend Client (`frontend/.env`)
+#### E. AI Service (`backend/services/ai/.env`)
+```env
+PORT=8004
+MONGODB_URI=mongodb+srv://<user>:<password>@cluster.mongodb.net/ai
+REDIS_URL=redis://localhost:6379
+FILE_SERVICE_URL=http://localhost:3003
+AUTH_SERVICE=http://localhost:3001
+AI_MODEL=deepseek/deepseek-chat
+OPENROUTER_API_KEY=sk-or-v1-your_openrouter_api_key_here
+```
+
+#### F. Terminal Service (`backend/services/terminal/.env`)
+```env
+PORT=8005
+MONGODB_URI=mongodb+srv://<user>:<password>@cluster.mongodb.net/terminal
+FILE_SERVICE_URL=http://localhost:3003
+REDIS_URL=redis://localhost:6379
+```
+
+#### G. Payment Service (`backend/services/payment/.env`)
+```env
+PORT=8006
+MONGODB_URI=mongodb+srv://<user>:<password>@cluster.mongodb.net/payment
+REDIS_URL=redis://localhost:6379
+RAZORPAY_KEY_ID=your_razorpay_test_key_id
+RAZORPAY_KEY_SECRET=your_razorpay_test_key_secret
+AUTH_SERVICE=http://localhost:3001
+```
+
+#### H. Frontend Client (`frontend/.env`)
 ```env
 VITE_SERVER_URL=http://localhost:3000
-VITE_FIREBASE_API_KEY=your_firebase_web_api_key
-VITE_FIREBASE_AUTH_DOMAIN=your-project-id.firebaseapp.com
-VITE_FIREBASE_PROJECT_ID=your-project-id
-VITE_FIREBASE_STORAGE_BUCKET=your-project-id.firebasestorage.app
-VITE_FIREBASE_MESSAGING_SENDER_ID=your_sender_id
-VITE_FIREBASE_APP_ID=your_app_id
+VITE_TERMINAL_SERVICE_URL=http://localhost:8005
+VITE_FIREBASE_API_KEY=your_firebase_api_key
 ```
 
 ---
 
 ### 3. Install Dependencies
 
-Install root and workspace dependencies:
-
 ```bash
 # Gateway
 cd backend/gateway && npm install
 
-# Auth Service
+# Microservices
 cd ../services/auth && npm install
-
-# Project Service
 cd ../project && npm install
-
-# File Service
 cd ../file && npm install
+cd ../ai && npm install
+cd ../terminal && npm install
+cd ../payment && npm install
 
 # Frontend
 cd ../../../frontend && npm install
@@ -282,66 +320,62 @@ cd ../../../frontend && npm install
 
 ---
 
-### 4. Start Backend Microservices
+### 4. Run All Services
 
-Ensure Redis is running (`redis-server`). Then launch each service:
+#### Option A: 1-Click Startup (Windows)
+Double-click **`start-dev.bat`** in the project root. It will automatically start Redis in Docker and launch all 8 services in dedicated terminal windows!
 
-```bash
-# Terminal 1: Gateway
-cd backend/gateway && npm start
+#### Option B: Manual Startup
+Open separate terminal tabs for each service:
+1. **Redis**: `cd backend && docker compose up -d`
+2. **Gateway**: `cd backend/gateway && npm run dev`
+3. **Auth**: `cd backend/services/auth && npm run dev`
+4. **Project**: `cd backend/services/project && npm run dev`
+5. **File**: `cd backend/services/file && npm run dev`
+6. **AI**: `cd backend/services/ai && npm run dev`
+7. **Terminal**: `cd backend/services/terminal && npm run dev`
+8. **Payment**: `cd backend/services/payment && npm run dev`
+9. **Frontend**: `cd frontend && npm run dev`
 
-# Terminal 2: Auth Service
-cd backend/services/auth && npm run dev
-
-# Terminal 3: Project Service
-cd backend/services/project && npm run dev
-
-# Terminal 4: File Service
-cd backend/services/file && npm run dev
-```
-
----
-
-### 5. Start Frontend Client
-
-```bash
-cd frontend
-npm run dev
-```
-
-Open your browser at **`http://localhost:5173`** to access the application!
+Open your browser at **`http://localhost:5173`** to access the IDE!
 
 ---
 
 ## 📡 API Reference
 
-All requests from the client route through the **API Gateway** on port `3000`:
+All client HTTP requests route through the **API Gateway** on port `3000`:
 
-| Service | Method | Gateway Endpoint | Description |
+| Service | Method | Endpoint | Description |
 | :--- | :--- | :--- | :--- |
 | **Auth** | `POST` | `/api/auth/login` | Authenticate with Firebase ID token & set cookie |
-| **Auth** | `GET` | `/api/auth/me` | Fetch authenticated user data & credits |
-| **Auth** | `POST` | `/api/auth/logout` | Revoke session & clear cookie |
-| **Auth** | `POST` | `/api/auth/deduct` | Deduct credits for AI requests |
-| **Project** | `GET` | `/api/project/` | Get all projects of current user |
+| **Auth** | `GET` | `/api/auth/me` | Fetch current user profile & credit balance |
+| **Auth** | `GET` | `/api/auth/logout` | Revoke session & clear cookie |
+| **Auth** | `POST` | `/api/auth/user/deduct-credits` | Deduct credits for AI requests |
+| **Auth** | `POST` | `/api/auth/user/add-credits` | Add credits after payment verification |
+| **Project** | `GET` | `/api/project/` | List all user projects |
 | **Project** | `POST` | `/api/project/` | Create a new project |
-| **Project** | `GET` | `/api/project/:id` | Get single project by ID |
-| **Project** | `PATCH` | `/api/project/:id` | Toggle starred status |
-| **Project** | `DELETE` | `/api/project/:id` | Delete project |
-| **File** | `GET` | `/api/file/tree/:id` | Get file tree hierarchy for project |
-| **File** | `POST` | `/api/file/` | Create a file or folder |
-| **File** | `GET` | `/api/file/:id` | Get file contents |
-| **File** | `PUT` | `/api/file/:id` | Save file content |
-| **File** | `DELETE` | `/api/file/:id` | Delete file or folder |
+| **Project** | `GET` | `/api/project/:id` | Get project details by ID |
+| **Project** | `PATCH` | `/api/project/:id` | Toggle star status |
+| **Project** | `DELETE` | `/api/project/:id` | Delete a project |
+| **File** | `GET` | `/api/file/tree/:projectId` | Fetch project directory tree hierarchy |
+| **File** | `POST` | `/api/file/create-file` | Create a new file |
+| **File** | `POST` | `/api/file/create-folder` | Create a new folder |
+| **File** | `GET` | `/api/file/:id` | Fetch file content |
+| **File** | `POST` | `/api/file/update/:id` | Update file content or rename |
+| **File** | `DELETE` | `/api/file/:id` | Delete a file or folder |
+| **AI** | `POST` | `/api/ai/chat` | Server-Sent Events (SSE) AI coding stream |
+| **Terminal** | `WS` | `ws://localhost:8005` | WebSocket shell session (`terminal:init`, `terminal:write`) |
+| **Payment** | `POST` | `/api/payment/create` | Create a Razorpay checkout order |
+| **Payment** | `POST` | `/api/payment/verify` | Verify Razorpay HMAC signature & credit top-up |
 
 ---
 
 ## 🔒 Security & Environment Hardening
 
-- **Zero Hardcoded Secrets**: All database connection strings, tokens, and keys are strictly loaded through environment variables.
-- **Multi-Source Firebase Credential Loader**: Auth Service securely loads service credentials via environment variables without requiring sensitive JSON files in Git.
-- **Git Ignore Protection**: Master [.gitignore](file:///d:/CodeEditor/.gitignore) protects all `.env*`, `.key`, `serviceAccountKey*.json`, and credential artifacts from accidental staging.
-- **Audited Repository**: Verified through rigorous git status and history scanning before publishing.
+- **Zero Hardcoded Secrets**: All keys, database credentials, and secrets are strictly loaded through `.env` configurations.
+- **Git Ignore Protection**: Master [.gitignore](file:///d:/CodeEditor/.gitignore) prevents any `.env`, `.key`, or credential artifacts from being tracked.
+- **Session Protection**: Distributed Redis sessions with HTTP-only cookies prevent XSS exploitation and token leakage.
+- **HMAC Payment Verification**: Cryptographically verifies Razorpay payment signatures with server-side secrets before fulfilling credits.
 
 ---
 
